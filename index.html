@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<!-- saved from url=(0042)file:///C:/Users/yaug/Downloads/index.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>열화하는 기억 | Degrading Memory</title>
+
+<script src="./열화하는 기억 _ Degrading Memory_files/firebase-app-compat.js.다운로드"></script>
+<script src="./열화하는 기억 _ Degrading Memory_files/firebase-database-compat.js.다운로드"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Bebas+Neue&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; min-height: 100vh;
+  background: #0a0a0a;
+  color: #e8e4dc;
+  font-family: 'DM Mono', monospace;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; opacity: 0.5;
+}
+
+#app {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  gap: 2rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(232,228,220,0.12);
+  padding-bottom: 1.25rem;
+}
+.title-block h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #e8e4dc;
+}
+.title-block .subtitle {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232,228,220,0.35);
+  margin-top: 6px;
+}
+.visit-badge { text-align: right; }
+.visit-badge .num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.8rem;
+  line-height: 1;
+  color: #e8e4dc;
+  transition: color 0.4s;
+}
+.visit-badge .lbl {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(232,228,220,0.35);
+  margin-top: 4px;
+}
+
+#canvas-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+}
+canvas {
+  width: 100%; height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+.deg-overlay {
+  position: absolute;
+  top: 1rem; left: 1rem;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232,228,220,0.55);
+  background: rgba(10,10,10,0.6);
+  padding: 4px 10px;
+  border: 1px solid rgba(232,228,220,0.1);
+  pointer-events: none;
+}
+#stage-label {
+  position: absolute;
+  bottom: 1rem; right: 1rem;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232,228,220,0.4);
+  background: rgba(10,10,10,0.6);
+  padding: 4px 10px;
+  border: 1px solid rgba(232,228,220,0.08);
+  pointer-events: none;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+.progress-track {
+  flex: 1; height: 2px;
+  background: rgba(232,228,220,0.1);
+}
+.progress-fill {
+  height: 100%;
+  background: #e8e4dc;
+  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+}
+.progress-pct {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(232,228,220,0.45);
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+#upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4/3;
+  border: 1px dashed rgba(232,228,220,0.2);
+  cursor: pointer;
+  gap: 1rem;
+}
+#upload-zone:hover { border-color: rgba(232,228,220,0.5); }
+#upload-zone p {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(232,228,220,0.35);
+  text-align: center;
+  line-height: 1.8;
+}
+#file-input { display: none; }
+
+.notice {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(232,228,220,0.2);
+  text-align: center;
+  margin-top: 1.5rem;
+  line-height: 2;
+}
+.notice span { color: rgba(232,228,220,0.45); }
+
+#error-msg {
+  display: none;
+  background: rgba(200,50,50,0.15);
+  border: 1px solid rgba(200,50,50,0.3);
+  color: rgba(232,100,100,0.9);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+@keyframes flash {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+.flash { animation: flash 0.4s ease; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="title-block">
+      <h1>열화하는 기억</h1>
+      <div class="subtitle">Degrading Memory — Interactive Installation</div>
+    </div>
+    <div class="visit-badge">
+      <div class="num" id="visit-num">—</div>
+      <div class="lbl">총 방문</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="upload-zone">
+      <p>이미지를 클릭하거나 드래그해서 업로드</p>
+      <input type="file" id="file-input" accept="image/*">
+    </div>
+
+    <div id="canvas-section" style="display:none">
+      <div id="canvas-wrap">
+        <canvas id="c"></canvas>
+        <div class="deg-overlay" id="deg-label">열화율 0%</div>
+        <div id="stage-label">원본</div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-track">
+          <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+        </div>
+        <div class="progress-pct" id="prog-pct">0 / 0</div>
+      </div>
+    </div>
+
+    <div id="error-msg"></div>
+
+    <div class="notice">
+      이 이미지는 방문자가 늘어날수록 천천히 열화됩니다.<br>
+      당신의 방문이 작품을 변화시킵니다.<br>
+      <span>현재 방문 횟수: <span id="notice-visits">—</span> / <span id="notice-max">—</span></span>
+    </div>
+  </main>
+</div>
+
+<script>
+
+// =============================================
+// 🔧 설정 — 이 부분만 수정하세요
+// =============================================
+
+var MAX_VISITS = 150;  // 열화 완료 기준 방문 횟수
+
+var IMAGE_BASE64 = "https://Gnao2.github.io/aritd/파인아트스튜디오 예시본 (1).jpg";  // 지금은 null 로 두세요. 배포할 때 "data:image/jpeg;base64,..." 로 교체
+
+var FIREBASE_API_KEY        = "AIzaSyDs8RtYNZKPPX4e423JcblqR6HJmJOyEwY";
+var FIREBASE_AUTH_DOMAIN    = "pic-im-baa48.firebaseapp.com";
+var FIREBASE_PROJECT_ID     = "pic-im-baa48";
+var FIREBASE_DATABASE_URL   = "https://pic-im-baa48-default-rtdb.firebaseio.com";
+var FIREBASE_STORAGE_BUCKET = "pic-im-baa48.appspot.com";
+var FIREBASE_MESSAGING_ID   = "645876155680";
+var FIREBASE_APP_ID         = "1:645876155680:web:16b70f4254d34f3263c345";
+
+// =============================================
+
+
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var originalImageData = null;
+var currentVisits = 0;
+
+function loadImage(src) {
+  var img = new Image();
+  img.onload = function() {
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0);
+    originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('canvas-section').style.display = 'block';
+    renderDegradation(currentVisits);
+  };
+  img.src = src;
+}
+
+function getStage(t) {
+  if (t < 0.05) return '원본';
+  if (t < 0.2)  return '노이즈';
+  if (t < 0.4)  return '픽셀화';
+  if (t < 0.6)  return '글리치';
+  if (t < 0.8)  return '탈색';
+  if (t < 0.99) return '소멸 직전';
+  return '파괴됨';
+}
+
+function renderDegradation(visits) {
+  if (!originalImageData) return;
+  var t = Math.min(visits / MAX_VISITS, 1);
+  var w = canvas.width;
+  var h = canvas.height;
+  var src = new Uint8ClampedArray(originalImageData.data);
+  var out = ctx.createImageData(w, h);
+  var d = out.data;
+  var i, n, gray, fade, burn;
+  for (i = 0; i < src.length; i++) d[i] = src[i];
+
+  if (t > 0.05) {
+    var amt = Math.min((t - 0.05) / 0.15, 1) * 60;
+    for (i = 0; i < d.length; i += 4) {
+      n = (Math.random() - 0.5) * amt;
+      d[i]   = Math.min(255, Math.max(0, d[i]   + n));
+      d[i+1] = Math.min(255, Math.max(0, d[i+1] + n));
+      d[i+2] = Math.min(255, Math.max(0, d[i+2] + n));
+    }
+  }
+
+  if (t > 0.2) {
+    var blockSize = Math.floor(2 + ((t - 0.2) / 0.2) * 32);
+    var by, bx, dy, dx, si, ni, br, bg, bb;
+    for (by = 0; by < h; by += blockSize) {
+      for (bx = 0; bx < w; bx += blockSize) {
+        si = (by * w + bx) * 4;
+        br = d[si]; bg = d[si+1]; bb = d[si+2];
+        for (dy = 0; dy < blockSize && by+dy < h; dy++) {
+          for (dx = 0; dx < blockSize && bx+dx < w; dx++) {
+            ni = ((by+dy)*w + (bx+dx)) * 4;
+            d[ni]=br; d[ni+1]=bg; d[ni+2]=bb;
+          }
+        }
+      }
+    }
+  }
+
+  if (t > 0.4) {
+    var lines = Math.floor(((t - 0.4) / 0.2) * 30);
+    var gy, gx, shift, sx, sii, di;
+    for (var g = 0; g < lines; g++) {
+      gy = Math.floor(Math.random() * h);
+      shift = Math.floor((Math.random() - 0.5) * ((t-0.4)/0.2) * 160);
+      for (gx = 0; gx < w; gx++) {
+        sx = (gx + shift + w) % w;
+        sii = (gy * w + sx) * 4;
+        di  = (gy * w + gx) * 4;
+        d[di]=d[sii]; d[di+1]=d[sii+1]; d[di+2]=d[sii+2];
+      }
+    }
+  }
+
+  if (t > 0.6) {
+    fade = Math.min((t - 0.6) / 0.2, 1);
+    for (i = 0; i < d.length; i += 4) {
+      gray = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+      d[i]   = d[i]   * (1-fade) + gray * fade;
+      d[i+1] = d[i+1] * (1-fade) + gray * fade;
+      d[i+2] = d[i+2] * (1-fade) + gray * fade;
+    }
+  }
+
+  if (t > 0.8) {
+    burn = Math.min((t - 0.8) / 0.2, 1);
+    for (i = 0; i < d.length; i += 4) {
+      d[i]   = d[i]   * (1 - burn);
+      d[i+1] = d[i+1] * (1 - burn);
+      d[i+2] = d[i+2] * (1 - burn);
+    }
+  }
+
+  ctx.putImageData(out, 0, 0);
+
+  var pct = Math.round(t * 100);
+  document.getElementById('deg-label').textContent = '열화율 ' + pct + '%';
+  document.getElementById('stage-label').textContent = getStage(t);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = visits + ' / ' + MAX_VISITS;
+  document.getElementById('notice-visits').textContent = visits;
+  document.getElementById('notice-max').textContent = MAX_VISITS;
+}
+
+function initFirebase() {
+  try {
+    firebase.initializeApp({
+      apiKey:            FIREBASE_API_KEY,
+      authDomain:        FIREBASE_AUTH_DOMAIN,
+      databaseURL:       FIREBASE_DATABASE_URL,
+      projectId:         FIREBASE_PROJECT_ID,
+      storageBucket:     FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: FIREBASE_MESSAGING_ID,
+      appId:             FIREBASE_APP_ID
+    });
+    var db  = firebase.database();
+    var ref = db.ref('visits');
+    ref.transaction(function(current) { return (current || 0) + 1; });
+    ref.on('value', function(snap) {
+      var v = snap.val() || 0;
+      currentVisits = v;
+      document.getElementById('visit-num').textContent = v;
+      document.getElementById('visit-num').classList.add('flash');
+      setTimeout(function() {
+        document.getElementById('visit-num').classList.remove('flash');
+      }, 500);
+      renderDegradation(v);
+    });
+  } catch(e) {
+    var el = document.getElementById('error-msg');
+    el.style.display = 'block';
+    el.textContent = 'Firebase 오류: ' + e.message;
+  }
+}
+
+function init() {
+  var zone  = document.getElementById('upload-zone');
+  var input = document.getElementById('file-input');
+
+  zone.addEventListener('click', function() { input.click(); });
+  zone.addEventListener('dragover', function(e) { e.preventDefault(); });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    var file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  });
+  input.addEventListener('change', function() {
+    if (input.files[0]) readFile(input.files[0]);
+  });
+
+  function readFile(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      loadImage(e.target.result);
+      initFirebase();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (IMAGE_BASE64) {
+    loadImage(IMAGE_BASE64);
+    initFirebase();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+
+</body></html>
