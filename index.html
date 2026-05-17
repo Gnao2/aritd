@@ -256,6 +256,7 @@ var currentVisits = 0;
 
 function loadImage(src) {
   var img = new Image();
+  img.crossOrigin = "anonymous";
   img.onload = function() {
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
